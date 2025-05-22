@@ -1,4 +1,6 @@
-numpy==2.2.5
+numpy==1.25
 librosa==0.11.0
 pyaudio==0.2.14
 torch==2.5.1
+essentia==2.1b6.dev1177
+matplotlib==3.10.3

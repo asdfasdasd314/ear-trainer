@@ -1,14 +1,19 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
+from torch.utils.data import DataLoader
+from constants import CHUNK
 
 class LSTM(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, output_size):
+    def __init__(self, hidden_size, num_layers):
         super(LSTM, self).__init__()
+        self.input_size = (CHUNK + 1) + 1 # Number of frequency bins + 1 for the melody
+        self.output_size = 12 # number of notes
         self.hidden_size = hidden_size
         self.num_layers = num_layers
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-        self.linear = nn.Linear(hidden_size, output_size)
+
+        self.lstm = nn.LSTM(self.input_size, hidden_size, num_layers, batch_first=True)
+        self.linear = nn.Linear(hidden_size, self.output_size)
+        self.softmax = nn.Softmax(dim=1)
 
 
     def forward(self, x):
@@ -16,18 +21,21 @@ class LSTM(nn.Module):
         c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
         out, _ = self.lstm(x, (h0, c0))
         out = self.linear(out[:, -1, :])
+        out = self.softmax(out)
         return out
     
 
-def train_model(model: LSTM, data: torch.Tensor, loss_function: nn.NLLLoss, optimizer: torch.optim.Optimizer, num_epochs: int):
+def train_model(model: LSTM, loader: DataLoader, loss_function: nn.NLLLoss, optimizer: torch.optim.Optimizer, num_epochs: int):
     while num_epochs > 0:
         model.zero_grad()
 
-        for i in range(len(data) - 1):
-            x = data[i]
-            y = data[i+1]
-            output = model(x)
-            loss = loss_function(output, y)
+        for (label, melody, harmony) in loader:
+            if melody.ndim == 1:
+                melody = melody.unsqueeze(1)
+
+            inputs = torch.cat((harmony, melody), dim=1)
+            output = model(inputs)
+            loss = loss_function(output, label)
             loss.backward()
             optimizer.step()
 
@@ -45,13 +53,11 @@ def load_model() -> LSTM:
     return model
 
 
-def test_model(model: LSTM, data: torch.Tensor):
+def test_model(model: LSTM, loader: DataLoader):
     accuracy = 0
-    for i in range(len(data) - 1):
-        x = data[i]
-        y = data[i+1]
-        output = model(x)
-        if output.argmax(dim=1) == y:
+    for inputs, labels in loader:
+        output = model(inputs)
+        if output.argmax(dim=1) == labels:
             accuracy += 1
 
-    return accuracy / len(data)
+    return accuracy / len(loader.dataset)
