@@ -60,37 +60,12 @@ def extract_melody(filename: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     return pitch_values, pitch_confidence, pitch_times
 
 
-def create_melody_mask(S: np.ndarray, pitches: np.ndarray, sr=RATE, n_fft=CHUNK, width=3):
-    """
-    Create a mask that targets the melody frequencies in S
-    S: (F, T) spectrogram
-    pitches: (T,) pitch contour in Hz
-    """
-    freqs = librosa.fft_frequencies(sr=sr, n_fft=n_fft)
-    mask = np.zeros_like(S)
+# def extract_harmony(S: np.ndarray, melody: np.ndarray) -> np.ndarray:
+#     for i, pitch in enumerate(melody):
+#         if pitch > 0:
+#             S[pitch, i] = 0
 
-    for t, pitch in enumerate(pitches):
-        if pitch > 0:
-            idx = np.argmin(np.abs(freqs - pitch))
-            start = max(0, idx - width)
-            end = min(len(freqs), idx + width + 1)
-            mask[start:end, t] = 0.5  # Keep some harmonic texture
-    return mask
-
-
-def extract_harmony(S: np.ndarray, melody: np.ndarray) -> np.ndarray:
-    melody_mask = create_melody_mask(S, melody)
-
-    # Smooth mask
-    melody_mask = np.clip(melody_mask, 0.0, 1.0)
-
-    # Apply complementary mask for harmony
-    harmony_mask = 1.0 - melody_mask
-
-    # Smoothed spectrograms
-    S_harmony = S * harmony_mask
-
-    return S_harmony
+#     return mask
 
 
 def synthesize_melody(pitches: np.ndarray):

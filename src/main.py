@@ -1,41 +1,42 @@
-import audio
-import librosa
-import numpy as np
-import time
 import torch.nn as nn
-import matplotlib.pyplot as plt
-from constants import RATE, CHUNK
-import plot
-import soundfile as sf
+from constants import CHUNK
 import data
+import librosa
+import os
 from torch.utils.data import DataLoader
 import ml
 import torch
+from constants import RATE
+
+from torch.nn.utils.rnn import pad_sequence
+
+# Pad in the collate_fn (used in DataLoader)
+def collate_fn(batch):
+    chromas, labels = zip(*batch)
+    chromas = pad_sequence(chromas, batch_first=True)  # Pads to longest in batch
+    labels = pad_sequence(labels, batch_first=True)
+    return chromas, labels
+    
 
 def main():
-    # microphone_audio = audio.collect_microphone_audio()
-    # audio.save_audio(microphone_audio, "microphone_audio.wav") # To load with essentia
-    pitches, _, _ = audio.extract_melody("musdb18hq/train/A Classic Education - NightOwl/mixture.wav")
-    y, _ = librosa.load("musdb18hq/train/A Classic Education - NightOwl/mixture.wav", sr=RATE)
-    harmonic = librosa.effects.hpss(y, n_fft=CHUNK, hop_length=CHUNK // 2, margin=(1.0, 5.0), power=2.0)[0]
-    S = librosa.stft(harmonic, n_fft=CHUNK, hop_length=CHUNK // 2, center=True)
-    S_db = librosa.amplitude_to_db(abs(S), ref=np.max)
+    chromas = data.load_chromas("musdb18hq/cache/chromas/train")
+    labels = data.load_tonal_center_labels("musdb18hq/train/train_labels.txt")
 
-    # Ensure both are the same length
-    min_len = min(S.shape[1], len(pitches))
-    S_db = S_db[:, :min_len]
-    pitches = pitches[:min_len]
+    print("Done loading cached data")
 
-    train_dataset = data.MelodyHarmonyDataset("musdb18hq/train")
-    train_loader = DataLoader(train_dataset, batch_size=10, shuffle=True)
+    dataset = data.TonalCenterDataset(chromas, labels)
 
-    test_dataset = data.MelodyHarmonyDataset("musdb18hq/test")
-    test_loader = DataLoader(test_dataset, batch_size=10, shuffle=True)
+    print("Done loading dataset")
 
-    model = ml.LSTM(hidden_size=100, num_layers=1)
-    ml.train_model(model, train_loader, nn.CrossEntropyLoss(), torch.optim.Adam(model.parameters(), lr=0.01), 100)
-    ml.save_model(model)
-    ml.test_model(model, test_loader)
+    dataloader = DataLoader(dataset, batch_size=16, shuffle=True, collate_fn=collate_fn)
+
+    print("Done loading data")
+
+    # Train model
+    model = ml.TonalCenterModel(hidden_size=128, num_layers=2)
+    loss_function = nn.CrossEntropyLoss(reduction="mean")
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    ml.train_tonal_center_model(model, dataloader, loss_function, optimizer, num_epochs=10)
 
 if __name__ == "__main__":
     main()
