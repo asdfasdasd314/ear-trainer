@@ -15,6 +15,7 @@ def main():
     S = librosa.stft(harmonic, n_fft=CHUNK)
     S = np.abs(S).T # Transpose it
     plot.plot_spectrogram(S)
+    
 
 if __name__ == "__main__":
     main()
