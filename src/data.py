@@ -3,16 +3,10 @@ import librosa
 import numpy as np
 import torch
 from audio import extract_melody
-from constants import CHUNK, KEYS, NOTES, RATE
+from constants import CHUNK, KEYS, NOTES, RATE, KEY_TO_IDX, NOTE_TO_IDX
 from torch.utils.data import Dataset
 from torch.nn.utils.rnn import pad_sequence
 from typing import List, Tuple
-
-key_to_idx = {key: i for i, key in enumerate(KEYS)}
-idx_to_key = {i: key for i, key in enumerate(KEYS)}
-
-note_to_idx = {note: i for i, note in enumerate(NOTES)}
-idx_to_note = {i: note for i, note in enumerate(NOTES)}
 
 
 def save_np_arrays(path: str, data: dict[str, np.ndarray]):
@@ -35,12 +29,12 @@ def frequency_to_12_tone(frequency: float) -> int:
 
 def load_tonal_center_labels(path: str) -> dict[str, int]:
     with open(path, "r") as f:
-        return {line.split("|")[0].strip(): note_to_idx[line.split("|")[1].split(" ")[0]] for line in f.readlines()}
+        return {line.split("|")[0].strip(): NOTE_TO_IDX[line.split("|")[1].split(" ")[0]] for line in f.readlines()}
 
 
 def load_key_labels(path: str) -> dict[str, int]:
     with open(path, "r") as f:
-        return {line.split("|")[0].strip(): key_to_idx[line.split("|")[1].split(" ")[0]] for line in f.readlines()}
+        return {line.split("|")[0].strip(): KEY_TO_IDX[line.split("|")[1].split(" ")[0]] for line in f.readlines()}
 
 
 def load_chromas(path: str) -> dict[str, np.ndarray]:
@@ -62,6 +56,32 @@ def partition_chromas(chromas: np.ndarray) -> List[np.ndarray]:
         partitions.append(chromas[:, i:i+2000].T)
 
     return partitions
+
+
+class TonalCenterTestDataset(Dataset):
+    def __init__(self, chromas: dict[str, np.ndarray], labels: dict[str, int]):
+        self.chromas = []
+        self.labels = []
+
+        for key in chromas.keys():
+            chroma = chromas[key]
+            self.chromas.append(chroma.T)
+
+            example_labels = []
+            for _ in chroma.T:
+                example_labels.append(labels[key])
+
+            self.labels.append(example_labels)
+
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        chroma = torch.tensor(self.chromas[index])
+        label = torch.tensor(self.labels[index])
+
+        return chroma, label
+
+
+    def __len__(self):
+        return len(self.chromas)
 
 
 class TonalCenterDataset(Dataset):

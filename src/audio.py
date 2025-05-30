@@ -5,8 +5,13 @@ import essentia.standard as es
 import wave
 import pyaudio
 import threading
-from scipy.ndimage import gaussian_filter
+import os
 from constants import RATE, CHUNK, FORMAT, CHANNELS
+
+def load_song(song_path: str) -> np.ndarray:
+    y, _ = librosa.load(os.path.join(song_path, "mixture.wav"), sr=RATE)
+    return y
+
 
 def collect_microphone_audio() -> List[bytes]:
     p = pyaudio.PyAudio()

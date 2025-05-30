@@ -33,9 +33,8 @@ def train_tonal_center_model(model: TonalCenterModel, loader: DataLoader, loss_f
             loss.backward()
             optimizer.step()
 
-        num_epochs -= 1
-
         print(f"Epoch {num_epochs} loss: {loss.item()}")
+        num_epochs -= 1
 
 
 def save_model(model: nn.Module):
@@ -51,9 +50,9 @@ def load_tonal_center_model() -> TonalCenterModel:
 
 def test_tonal_center_model(model: TonalCenterModel, loader: DataLoader):
     accuracy = 0
-    for (labels, features, lengths) in loader:
-        output = model(features, lengths)
-        if output.argmax(dim=1) == labels:
+    for chroma, label in loader:
+        output = model(chroma)
+        if output.argmax(dim=1) == label:
             accuracy += 1
 
     return accuracy / len(loader.dataset)
