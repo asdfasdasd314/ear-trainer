@@ -58,32 +58,6 @@ def partition_chromas(chromas: np.ndarray) -> List[np.ndarray]:
     return partitions
 
 
-class TonalCenterTestDataset(Dataset):
-    def __init__(self, chromas: dict[str, np.ndarray], labels: dict[str, int]):
-        self.chromas = []
-        self.labels = []
-
-        for key in chromas.keys():
-            chroma = chromas[key]
-            self.chromas.append(chroma.T)
-
-            example_labels = []
-            for _ in chroma.T:
-                example_labels.append(labels[key])
-
-            self.labels.append(example_labels)
-
-    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        chroma = torch.tensor(self.chromas[index])
-        label = torch.tensor(self.labels[index])
-
-        return chroma, label
-
-
-    def __len__(self):
-        return len(self.chromas)
-
-
 class TonalCenterDataset(Dataset):
 
     def __init__(self, chromas: dict[str, np.ndarray], labels: dict[str, int]):
@@ -97,12 +71,8 @@ class TonalCenterDataset(Dataset):
             partitions = partition_chromas(chroma)
             self.chromas.extend(partitions)
 
-            for partition in partitions:
-                partition_labels = []
-                for _ in partition:
-                    partition_labels.append(labels[key])
-
-                self.labels.append(partition_labels)
+            # Store ONE label per partition, not per frame
+            self.labels.extend([labels[key]] * len(partitions))
 
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:

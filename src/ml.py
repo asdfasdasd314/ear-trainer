@@ -13,14 +13,18 @@ class TonalCenterModel(nn.Module):
         self.num_layers = num_layers
 
         self.lstm = nn.LSTM(self.input_size, hidden_size, num_layers, batch_first=True)
-        self.linear = nn.Linear(hidden_size, self.output_size)
+        self.classifier = nn.Linear(hidden_size, self.output_size)
 
 
     def forward(self, x):
         # Potentially needs to be fixed, I don't really know
         output, _ = self.lstm(x)
-        output = self.linear(output)
-        return output
+        
+        # Aggregate over time to predict for the entire sequence
+        pooled = output.mean(dim=1)
+
+        logits = self.classifier(pooled)
+        return logits
     
 
 def train_tonal_center_model(model: TonalCenterModel, loader: DataLoader, loss_function: nn.NLLLoss, optimizer: torch.optim.Optimizer, num_epochs: int):
