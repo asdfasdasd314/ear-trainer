@@ -1,12 +1,17 @@
 import pyaudio
-
 CHUNK = 2048
 FORMAT = pyaudio.paInt16
+MAX_VALUE = 32768
 CHANNELS = 1
 RATE = 44100
+BUCKET_SIZE = int(RATE * 1) # 1 second
+MIN_FREQ = 20
+MAX_FREQ = 12544 # MIDI 127
 
 NOTES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
 KEYS = ["C minor", "C major", "Db minor", "Db major", "D minor", "D major", "Eb minor", "Eb major", "E minor", "E major", "F minor", "F major", "Gb minor", "Gb major", "G minor", "G major", "Ab minor", "Ab major", "A minor", "A major", "Bb minor", "Bb major", "B minor", "B major"]
+
+CHROMA_TO_NOTE = {0: "C4", 1: "C#4", 2: "D4", 3: "E-4", 4: "E4", 5: "F4", 6: "F#4", 7: "G4", 8: "A-4", 9: "A4", 10: "B-4", 11: "B4"}
 
 SHARP_TO_ENHARMONIC_FLAT = {"C#": "Db", "D#": "Eb", "F#": "Gb", "G#": "Ab", "A#": "Bb"}
 
@@ -15,45 +20,3 @@ IDX_TO_KEY = {i: key for i, key in enumerate(KEYS)}
 
 NOTE_TO_IDX = {note: i for i, note in enumerate(NOTES)}
 IDX_TO_NOTE = {i: note for i, note in enumerate(NOTES)}
-
-BLUES_PROGRESSIONS = [
-    # Dominant 7ths
-    [["I-M-7", "I-M-7", "I-M-7", "I-M-7"], ["IV-M-7", "IV-M-7", "I-M-7", "I-M-7"], ["V-M-7", "IV-M-7", "I-M-7", "I-M-7"]],
-    [["I-M-7", "I-M-7", "I-M-7", "I-M-7"], ["IV-M-7", "IV-M-7", "I-M-7", "I-M-7"], ["V-M-7", "IV-M-7", "I-M-7", "IV-M-7"]],
-    [["I-M-7", "I-M-7", "I-M-7", "I-M-7"], ["IV-M-7", "IV-M-7", "I-M-7", "I-M-7"], ["V-M-7", "IV-M-7", "I-M-7", ["I-M-7", "IV-M-7"]]],
-    [["I-M-7", "IV-M-7", "I-M-7", "I-M-7"], ["IV-M-7", "IV-M-7", "I-M-7", "I-M-7"], ["V-M-7", "IV-M-7", "I-M-7", "I-M-7"]],
-    [["I-M-7", "IV-M-7", "I-M-7", "I-M-7"], ["IV-M-7", "IV-M-7", "I-M-7", "I-M-7"], ["V-M-7", "IV-M-7", "I-M-7", "IV-M-7"]],
-    [["I-M-7", "IV-M-7", "I-M-7", "I-M-7"], ["IV-M-7", "IV-M-7", "I-M-7", "I-M-7"], ["V-M-7", "IV-M-7", "I-M-7", ["I-M-7", "IV-M-7"]]],
-
-    # Minor 7ths
-    [["I-m-7", "I-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-m-7", "IV-m-7", "I-m-7", "I-m-7"]],
-    [["I-m-7", "I-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-m-7", "IV-m-7", "I-m-7", "IV-m-7"]],
-    [["I-m-7", "I-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-m-7", "IV-m-7", "I-m-7", ["I-m-7", "IV-m-7"]]],
-    [["I-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-m-7", "IV-m-7", "I-m-7", "I-m-7"]],
-    [["I-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-m-7", "IV-m-7", "I-m-7", "IV-m-7"]],
-    [["I-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-m-7", "IV-m-7", "I-m-7", ["I-m-7", "IV-m-7"]]],
-
-    # Mixed major and minor 7ths
-    [["I-m-7", "I-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-m-7", "IV-m-7", "I-m-7", "V-M-7"]],
-    [["I-m-7", "I-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-M-7", "IV-m-7", "I-m-7", "I-m-7"]],
-    [["I-m-7", "I-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-M-7", "IV-m-7", "I-m-7", "IV-m-7"]],
-    [["I-m-7", "I-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-M-7", "IV-m-7", "I-m-7", "V-M-7"]],
-    [["I-m-7", "I-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-M-7", "IV-m-7", "I-m-7", ["I-m-7", "IV-m-7"]]],
-    [["I-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-m-7", "IV-m-7", "I-m-7", "V-M-7"]],
-    [["I-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-M-7", "IV-m-7", "I-m-7", "I-m-7"]],
-    [["I-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-M-7", "IV-m-7", "I-m-7", "IV-m-7"]],
-    [["I-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-M-7", "IV-m-7", "I-m-7", "V-M-7"]],
-    [["I-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["V-M-7", "IV-m-7", "I-m-7", ["I-m-7", "IV-m-7"]]],
-
-    # The Thrill is Gone
-    [["I-m-7", "I-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["bVI-M-maj7", "V-M-7", "I-m-7", "I-m-7"]],
-    [["I-m-7", "I-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["bVI-M-7", "V-M-7", "I-m-7", "I-m-7"]],
-    [["I-m-7", "I-m-7", "I-m-7", "I-m-7"], ["IV-m-7", "IV-m-7", "I-m-7", "I-m-7"], ["bVI-M-7", "V-M-7", "I-m-7", "V-M-7"]],
-
-    # 8 Bar Blues
-    [["I-M-7", "V-M-7", "IV-M-7", "IV-M-7"], ["I-M-7", ["V-M-7", "IV-M-7"], "I-M-7", "V-M-7"]],
-    [["I-M-7", "I-M-7", "IV-M-7", "IV-M-7"], ["I-M-7", "V-M-7", ["I-M-7", "IV-M-7"], ["I-M-7", "V-M-7"]]],
-]
-
-CHORD_NUMERALS = ["I", "bII", "II", "bIII", "III", "IV", "bV", "V", "bVI", "VI", "bVII", "VII"]
-NUMERAL_TO_IDX = {numeral: idx for idx, numeral in enumerate(CHORD_NUMERALS)}

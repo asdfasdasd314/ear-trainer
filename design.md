@@ -13,19 +13,6 @@ For data I will manually transcribe jazz standards and twelve bar blues from she
 The chords have to be formatted where the timespan of the chord is in seconds (floating point accuracy) like this:
 15.31025011 16.3221105 | C dominant 7
 
-Chord symbols:
-{Root Note}-{Triad}-{First extension}
+**Binary Cross Entropy Loss**
 
-Triads:
-- M
-- m
-- sus2
-- sus4
-- dim
-- aug
-
-Sixth/Seventh
-- 6
-- 7
-- maj7
-- dim7
+There's some good stuff in this Gemini chat

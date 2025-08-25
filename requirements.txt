@@ -1,6 +1,11 @@
-numpy==1.25
+numpy==1.26.4
+music21==9.7.1
+pandas==2.3.1
 librosa==0.11.0
 pyaudio==0.2.14
 torch==2.5.1
 essentia==2.1b6.dev1177
 matplotlib==3.10.3
+pypdf==5.7.0
+scikit-learn==1.7.1
+pygame==2.6.0
