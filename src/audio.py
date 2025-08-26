@@ -11,19 +11,47 @@ import torch
 from transformer import ChordTransformer, max_len
 from constants import CHROMA_TO_NOTE, RATE, CHUNK, FORMAT, CHANNELS
 
+def get_microphone_audio(seconds: float=float("inf"), stream: pyaudio.Stream=None) -> List[bytes]:
+    read = [] # For some reason the signal has to be updating a list
+
+    def process_input():
+        while True:
+            inp = input()
+            if inp == "q":
+                read.append(True)
+                break
+
+    if seconds == float("inf"):
+        read_input = threading.Thread(target=process_input)
+        read_input.start()
+
+    frames = []
+    stream.start_stream()
+    while True:
+        data = stream.read(CHUNK)
+        frames.append(data)
+        if len(read) > 0:
+            break
+        if len(frames) > seconds * 10:
+            break
+
+    stream.stop_stream()
+
+    return frames
+
 def load_song(song_path: str) -> np.ndarray:
     y, _ = librosa.load(os.path.join(song_path, "mixture.wav"), sr=RATE)
     return y
 
 
-def compute_weighted_chroma(spectrum: np.ndarray, chroma: np.ndarray) -> np.ndarray:
+def compute_weighted_chroma(spectrum: np.ndarray, chroma: np.ndarray) -> Tuple[np.ndarray, float]:
     weighted_chroma = np.zeros(12)
     for i in range(len(chroma)):
         chroma_idx = int(chroma[i])
         weighted_chroma[chroma_idx] += spectrum[i]
     if np.sum(weighted_chroma) == 0:
         return np.zeros(12)
-    return weighted_chroma / np.sum(weighted_chroma)
+    return np.square(weighted_chroma / np.sum(weighted_chroma))
 
 
 def construct_chord_symbol(root: int, midi: List[int]) -> str:
@@ -44,7 +72,7 @@ def chroma_to_midi(chroma: List[int]) -> List[int]:
 
 
 def set_binary_chroma(chroma: List[float], threshold: float) -> List[int]:
-    return [1 if chroma > threshold else 0 for chroma in chroma]
+    return [1 if c > threshold else 0 for c in chroma]
 
 
 def determine_roots(inpt: np.ndarray, model: ChordTransformer, mask: np.ndarray) -> List[int]:
