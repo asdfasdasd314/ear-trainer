@@ -8,4 +8,5 @@ essentia==2.1b6.dev1177
 matplotlib==3.10.3
 pypdf==5.7.0
 scikit-learn==1.7.1
+scipy==1.16.3
 pygame==2.6.0
