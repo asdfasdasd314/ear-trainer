@@ -23,13 +23,13 @@ This is a program I created to classify the chord symbols in a piece of music, k
 
 Audio frames are read in a separate thread (`input_thread`) and passed to a queue ensuring thread safety.
 
-The main loop creates a local copy from which frequencies can be computed. A sequence of preprocessing functions are called to remove noise and harmonics in the sound. The frequencies left over are passed to a chord classification algorithm giving the end chord symbol which is then printed to the console.
+The main loop creates a local copy from which frequencies can be computed. A sequence of preprocessing functions are called to remove noise and harmonics in the sound. The remaining frequencies are passed to a chord classification algorithm, which outputs the chord symbol to the console.
 
 As the FFT relies on a non-zero amount of audio to determine frequencies, there will always be some amount of lag in the microphone input and chord symbol output.
 
 ### Usage
 
-1. Install dependiences from `requirements.txt` (if `numpy` and `pyaudio` are installed this step can be skipped)
+1. Install dependencies from `requirements.txt` (if `numpy` and `pyaudio` are installed this step can be skipped)
     - `pip3 install -r requirements.txt` or `pip install -r requirements.txt`
 2. Run the main file from the project root
     - `python3 src/main.py` or `python src/main.py`
