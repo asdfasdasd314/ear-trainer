@@ -1,14 +1,11 @@
 from collections import Counter
 import threading
 
-import matplotlib.pyplot as plt
 import pyaudio
-from constants import ATTACK_HISTORY_LENGTH, REGULAR_HISTORY_LENGTH, ATTACK_THRESHOLD_1, ATTACK_THRESHOLD_2, HARMONIC_REDUCTION, FORMAT, CHANNELS, HOP_SIZE, IDX_TO_NOTE, RATE, CHUNK, MAX_VALUE, BUCKET_SIZE, MIN_FREQ, MAX_FREQ, STRENGTH_THRESHOLD_1, STRENGTH_THRESHOLD_2, PROXIMITY_THRESHOLD
+from constants import HOP_SIZE, ATTACK_HISTORY_LENGTH, REGULAR_HISTORY_LENGTH, ATTACK_THRESHOLD_1, ATTACK_THRESHOLD_2, HARMONIC_REDUCTION, FORMAT, CHANNELS, RATE, CHUNK, MAX_VALUE, BUCKET_SIZE, MIN_FREQ, MAX_FREQ, STRENGTH_THRESHOLD_1, STRENGTH_THRESHOLD_2, PROXIMITY_THRESHOLD
 import numpy as np
-from audio import remove_harmonics, peaks_to_midi, cluster_peaks, locate_peaks, compute_weighted_chroma, chroma_to_midi, determine_roots, preprocess_input, construct_chord_symbol, mask_noise
-import time
+from audio import remove_harmonics, peaks_to_midi, cluster_peaks, locate_peaks
 from queue import Queue
-import librosa
 
 from entropy import determine_chord_symbol
 
@@ -30,19 +27,6 @@ def get_frames():
 stream.start_stream()
 input_thread = threading.Thread(target=get_frames)
 input_thread.start()
-
-# # Initialize plot once before the loop
-# plt.ion()  # Turn on interactive mode
-# fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
-# ax1.set_xlim(0, MAX_FREQ - MIN_FREQ)
-# ax1.set_ylim(0, 200)  # Fix y-axis scale from 0 to 100
-# ax1.set_title('Spectrum')
-# ax1.set_xlabel('Frequency Bin')
-# ax1.set_ylabel('Magnitude')
-# ax2.set_title('Peaks')
-# ax2.set_xlabel('Frequency Bin')
-# ax2.set_ylabel('Magnitude')
-# plt.tight_layout()
 
 note_history  = []
 bass_history = []

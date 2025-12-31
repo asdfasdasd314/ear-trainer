@@ -1,15 +1,6 @@
-from typing import List, Tuple
+from typing import List
 import numpy as np
-import librosa
-import essentia.standard as es
-import wave
-import pyaudio
-import threading
-import os
-import music21
-import torch
-from transformer import ChordTransformer, max_len
-from constants import HARMONIC_UPPER_BOUND, HARMONIC_LOWER_BOUND, CHROMA_TO_NOTE, RATE, CHUNK, FORMAT, CHANNELS, IDX_TO_NOTE
+from constants import HARMONIC_UPPER_BOUND, HARMONIC_LOWER_BOUND
 
 # Based on the harmonic series:
 harmonic_errors = [None, None, 0.5, 0.333, 0.25, 0.2, 0.166, 0.142, 0.125]
@@ -95,61 +86,3 @@ def peaks_to_midi(peaks: np.ndarray, freqs: np.ndarray) -> np.ndarray:
         midis.append(midi)
 
     return np.array(midis)
-
-def mask_noise(spectra, threshold):
-    return spectra * (spectra > threshold)
-
-
-def load_song(song_path: str) -> np.ndarray:
-    y, _ = librosa.load(os.path.join(song_path, "mixture.wav"), sr=RATE)
-    return y
-
-
-def compute_weighted_chroma(spectrum: np.ndarray, chroma: np.ndarray, freqs: np.ndarray) -> np.ndarray:
-    weighted_chroma = np.zeros(12)
-    for i in range(len(chroma)):
-        chroma_idx = int(chroma[i])
-        weighted_chroma[chroma_idx] += spectrum[i]
-    return weighted_chroma
-
-
-def construct_chord_symbol(root: int, midi: List[int]) -> str:
-    chord = music21.chord.Chord(midi)
-    chord.root = music21.pitch.Pitch(midi=root)
-    symbol = music21.harmony.ChordSymbol()
-    for note in chord.pitches:
-        symbol.add(note)
-    return symbol.figure
-
-
-def chroma_to_midi(chroma: List[int]) -> List[int]:
-    midi = []
-    for idx in range(len(chroma)):
-        if chroma[idx] == 1:
-            midi.append(idx)
-    return midi
-
-
-def determine_roots(inpt: np.ndarray, model: ChordTransformer, mask: np.ndarray) -> List[int]:
-    inpt = torch.tensor(inpt).unsqueeze(0)
-    mask = torch.tensor(mask).unsqueeze(0).transpose(0, 1)
-    logits = model(inpt, src_key_padding_mask=(mask == 0))
-    return [IDX_TO_NOTE[i] for i in torch.argmax(logits, dim=-1).tolist()[0]]
-
-
-def preprocess_input(binary_chroma: List[List[int]]) -> np.ndarray:
-    ##### THIS HAS TO BE FIXED #####
-    preprocessed = []
-    duration = 0
-    for i in range(len(binary_chroma) - 1):
-        duration += 4
-        if binary_chroma[i] != binary_chroma[i + 1]:
-            preprocessed.append(binary_chroma[i])
-            preprocessed[-1].append(duration / 16)
-            duration = 0
-
-    if binary_chroma[-1] == binary_chroma[-2]:
-        preprocessed.append(binary_chroma[-1])
-        preprocessed[-1].append((duration + 4) / 16)
-
-    return np.array(preprocessed, dtype=np.float32)
